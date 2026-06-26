@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Recipe Box</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&family=Inter:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.31.0/dist/tabler-icons.min.css" />
+
+  <!--
+    SETUP: Replace the value below with your Google OAuth Client ID.
+    Steps:
+      1. Go to https://console.cloud.google.com/
+      2. Create a project → APIs & Services → Credentials
+      3. Create OAuth 2.0 Client ID → Web application
+      4. Add your domain (or http://localhost for local use) to "Authorized JavaScript origins"
+      5. Paste the client ID below
+  -->
+  <script>
+    const GOOGLE_CLIENT_ID = '228139923005-vkb4g1fiooe4eejv58uebeuppogk1bsl.apps.googleusercontent.com';
+  </script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --red: #c0392b;
+      --red-dark: #a93226;
+      --red-light: #fde8e6;
+      --red-mid: #e74c3c;
+      --cream: #fdf6ec;
+      --warm-gray: #f5f0e8;
+      --border: rgba(0,0,0,0.1);
+      --text: #2c2416;
+      --text-mid: #6b5e4e;
+      --text-muted: #9c8c7c;
+      --surface: #ffffff;
+      --surface-off: #fdf8f3;
+      --radius: 10px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --cream: #1a1512;
+        --warm-gray: #221e18;
+        --border: rgba(255,255,255,0.1);
+        --text: #f0e8dc;
+        --text-mid: #c4b49c;
+        --text-muted: #7a6c5e;
+        --surface: #2a2218;
+        --surface-off: #221e18;
+      }
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--cream);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* Header */
+    .header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 1.5rem;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+
+    .logo-icon {
+      width: 38px;
+      height: 38px;
+      background: var(--red);
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+
+    .logo-text {
+      font-family: 'Lora', serif;
+      font-size: 20px;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border-radius: var(--radius);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: background 0.15s, border-color 0.15s;
+      font-family: inherit;
+    }
+
+    .btn-primary {
+      background: var(--red);
+      color: #fff;
+    }
+
+    .btn-primary:hover { background: var(--red-dark); }
+
+    .btn-outline {
+      background: transparent;
+      border-color: var(--border);
+      color: var(--text-mid);
+    }
+
+    .btn-outline:hover { background: var(--warm-gray); }
+
+    .btn-google {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 14px;
+    }
+
+    .btn-google:hover { background: var(--warm-gray); }
+
+    .btn-google img {
+      width: 18px;
+      height: 18px;
+    }
+
+    .user-avatar {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid var(--red-light);
+      cursor: pointer;
+    }
+
+    .user-menu-wrap { position: relative; }
+
+    .user-menu {
+      position: absolute;
+      right: 0;
+      top: calc(100% + 8px);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      min-width: 200px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+      overflow: hidden;
+      display: none;
+      z-index: 200;
+    }
+
+    .user-menu.open { display: block; }
+
+    .user-menu-header {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .user-menu-name { font-size: 14px; font-weight: 500; }
+    .user-menu-email { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+    .user-menu-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      font-size: 14px;
+      color: var(--text-mid);
+      cursor: pointer;
+      border: none;
+      background: none;
+      width: 100%;
+      text-align: left;
+      font-family: inherit;
+    }
+
+    .user-menu-item:hover { background: var(--warm-gray); }
+    .user-menu-item.danger { color: var(--red); }
+
+    /* Main content */
+    .main { max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+    .page-title {
+      font-family: 'Lora', serif;
+      font-size: 26px;
+      font-weight: 500;
+      margin-bottom: 0.25rem;
+    }
+
+    .page-sub { font-size: 14px; color: var(--text-muted); margin-bottom: 1.5rem; }
+
+    /* Toolbar */
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 1.25rem;
+      flex-wrap: wrap;
+    }
+
+    .search-wrap {
+      position: relative;
+      flex: 1;
+      min-width: 180px;
+    }
+
+    .search-wrap i {
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      font-size: 16px;
+      pointer-events: none;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 9px 12px 9px 34px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 14px;
+      background: var(--surface);
+      color: var(--text);
+      font-family: inherit;
+    }
+
+    .search-input:focus { outline: none; border-color: var(--red); }
+
+    /* Tags */
+    .tags { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 1.5rem; }
+
+    .tag {
+      padding: 5px 13px;
+      border-radius: 20px;
+      font-size: 12px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-mid);
+      cursor: pointer;
+      transition: all 0.1s;
+      font-family: inherit;
+    }
+
+    .tag:hover, .tag.active { background: var(--red); color: #fff; border-color: var(--red); }
+
+    /* Recipe grid */
+    .recipes {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+      gap: 16px;
+    }
+
+    .recipe-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: border-color 0.15s, transform 0.1s;
+      position: relative;
+    }
+
+    .recipe-card:hover { border-color: var(--red); transform: translateY(-2px); }
+
+    .card-banner {
+      height: 100px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 44px;
+      position: relative;
+    }
+
+    .card-lock {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: rgba(0,0,0,0.35);
+      color: #fff;
+      border-radius: 6px;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+    }
+
+    .card-body { padding: 12px 14px 14px; }
+    .card-title { font-size: 15px; font-weight: 500; margin-bottom: 5px; }
+
+    .card-meta {
+      display: flex;
+      gap: 10px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .card-meta span { display: flex; align-items: center; gap: 3px; }
+
+    .card-cat {
+      display: inline-block;
+      font-size: 11px;
+      padding: 2px 9px;
+      border-radius: 10px;
+      background: var(--red-light);
+      color: var(--red-dark);
+      margin-top: 8px;
+    }
+
+    /* Empty state */
+    .empty {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 4rem 1rem;
+    }
+
+    .empty-icon { font-size: 52px; margin-bottom: 1rem; }
+
+    .empty h3 {
+      font-family: 'Lora', serif;
+      font-size: 20px;
+      font-weight: 500;
+      margin-bottom: 8px;
+      color: var(--text);
+    }
+
+    .empty p { color: var(--text-muted); font-size: 14px; margin-bottom: 1.25rem; }
+
+    /* Login banner */
+    .login-banner {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 2.5rem;
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .login-banner h2 {
+      font-family: 'Lora', serif;
+      font-size: 22px;
+      font-weight: 500;
+      margin-bottom: 8px;
+    }
+
+    .login-banner p { color: var(--text-muted); font-size: 14px; margin-bottom: 1.5rem; }
+
+    /* Modal */
+    .backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 300;
+      padding: 1rem;
+    }
+
+    .modal {
+      background: var(--surface);
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      width: 100%;
+      max-width: 540px;
+      max-height: 92vh;
+      overflow-y: auto;
+    }
+
+    .modal-header {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .modal-header h2 { font-size: 18px; font-weight: 500; }
+
+    .modal-close {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text-muted);
+      font-size: 20px;
+      padding: 2px;
+      flex-shrink: 0;
+      line-height: 1;
+    }
+
+    .modal-close:hover { color: var(--text); }
+
+    .modal-body { padding: 1.25rem 1.5rem; }
+    .modal-footer {
+      padding: 1rem 1.5rem;
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    .form-row { margin-bottom: 1rem; }
+    .form-row:last-child { margin-bottom: 0; }
+
+    .form-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-mid);
+      margin-bottom: 5px;
+    }
+
+    .form-input, .form-select, .form-textarea {
+      width: 100%;
+      padding: 9px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 14px;
+      background: var(--surface);
+      color: var(--text);
+      font-family: inherit;
+    }
+
+    .form-textarea { resize: vertical; min-height: 80px; line-height: 1.6; }
+
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+      outline: none;
+      border-color: var(--red);
+    }
+
+    .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    .emoji-picker { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 7px; }
+
+    .emoji-btn {
+      width: 40px;
+      height: 40px;
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      background: var(--surface-off);
+      cursor: pointer;
+      font-size: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: border-color 0.1s, background 0.1s;
+    }
+
+    .emoji-btn:hover { border-color: var(--red); }
+    .emoji-btn.selected { border-color: var(--red); background: var(--red-light); }
+
+    /* Visibility toggle */
+    .visibility-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface-off);
+    }
+
+    .visibility-label { font-size: 14px; color: var(--text-mid); display: flex; align-items: center; gap: 6px; }
+
+    .toggle {
+      position: relative;
+      width: 40px;
+      height: 22px;
+    }
+
+    .toggle input { opacity: 0; width: 0; height: 0; }
+
+    .toggle-slider {
+      position: absolute;
+      inset: 0;
+      background: var(--border);
+      border-radius: 11px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .toggle-slider::before {
+      content: '';
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      left: 3px;
+      top: 3px;
+      background: white;
+      border-radius: 50%;
+      transition: transform 0.2s;
+    }
+
+    .toggle input:checked + .toggle-slider { background: var(--red); }
+    .toggle input:checked + .toggle-slider::before { transform: translateX(18px); }
+
+    /* View modal */
+    .view-banner {
+      height: 130px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 64px;
+      border-radius: 16px 16px 0 0;
+    }
+
+    .view-meta { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+
+    .badge {
+      font-size: 12px;
+      padding: 3px 10px;
+      border-radius: 10px;
+      background: var(--warm-gray);
+      border: 1px solid var(--border);
+      color: var(--text-mid);
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .badge.public { background: #e8f5e9; color: #2e7d32; border-color: #c8e6c9; }
+    .badge.private { background: var(--red-light); color: var(--red-dark); border-color: #f5c6c3; }
+
+    .section-label {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      margin: 1.25rem 0 6px;
+    }
+
+    .section-label:first-child { margin-top: 0; }
+
+    .section-text {
+      font-size: 14px;
+      color: var(--text);
+      line-height: 1.75;
+      white-space: pre-wrap;
+    }
+
+    .btn-delete { background: none; border: 1px solid var(--red); border-radius: var(--radius); padding: 8px 14px; font-size: 14px; cursor: pointer; color: var(--red); font-family: inherit; display: inline-flex; align-items: center; gap: 5px; }
+    .btn-delete:hover { background: var(--red-light); }
+
+    /* Notification */
+    .notif {
+      position: fixed;
+      bottom: 1.5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--text);
+      color: var(--cream);
+      padding: 10px 18px;
+      border-radius: 30px;
+      font-size: 14px;
+      z-index: 9999;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .notif.show { opacity: 1; }
+
+    /* Section header */
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.25rem;
+    }
+
+    .section-h { font-family: 'Lora', serif; font-size: 18px; font-weight: 500; }
+    .section-count { font-size: 13px; color: var(--text-muted); }
+  </style>
+</head>
+<body>
+
+<header class="header">
+  <div class="logo">
+    <div class="logo-icon">🍲</div>
+    <span class="logo-text">Recipe Box</span>
+  </div>
+  <div class="header-right" id="header-right"></div>
+</header>
+
+<main class="main" id="main"></main>
+
+<div id="modal-root"></div>
+<div class="notif" id="notif"></div>
+
+<script src="https://accounts.google.com/gsi/client" async></script>
+<script>
+const EMOJIS = ['🍲','🥗','🍳','🥘','🍜','🍝','🥞','🥙','🌮','🍱','🥣','🍛','🍤','🫕','🥧','🎂','🍰','🍪','🍕','🥩'];
+const CATEGORIES = ['All','Breakfast','Lunch','Dinner','Snack','Dessert','Vegetarian','Quick'];
+const CAT_BG = {
+  Breakfast:'#fff8e1', Lunch:'#e8f5e9', Dinner:'#fce4ec',
+  Snack:'#e3f2fd', Dessert:'#f3e5f5', Vegetarian:'#dcedc8',
+  Quick:'#fff3e0', '':'#fdf6ec'
+};
+
+let user = JSON.parse(localStorage.getItem('rb_user') || 'null');
+let recipes = JSON.parse(localStorage.getItem('rb_recipes') || '[]');
+let activeTag = 'All';
+let searchQ = '';
+let userMenuOpen = false;
+
+function saveRecipes() { localStorage.setItem('rb_recipes', JSON.stringify(recipes)); }
+function saveUser(u) { user = u; localStorage.setItem('rb_user', JSON.stringify(u)); }
+function clearUser() { user = null; localStorage.removeItem('rb_user'); }
+
+function uid() { return Math.random().toString(36).slice(2,10); }
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function notify(msg) {
+  const el = document.getElementById('notif');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+// Google sign-in callback
+function handleGoogleCredential(response) {
+  const payload = parseJwt(response.credential);
+  saveUser({ id: payload.sub, name: payload.name, email: payload.email, picture: payload.picture });
+  renderAll();
+  notify(`Welcome, ${payload.name.split(' ')[0]}!`);
+}
+
+function parseJwt(token) {
+  const base64 = token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/');
+  return JSON.parse(atob(base64));
+}
+
+function signOut() {
+  if (window.google) google.accounts.id.disableAutoSelect();
+  clearUser();
+  renderAll();
+  notify('Signed out.');
+}
+
+function initGoogle() {
+  if (!window.google || GOOGLE_CLIENT_ID === 'YOUR_GOOGLE_CLIENT_ID_HERE') return;
+  google.accounts.id.initialize({
+    client_id: GOOGLE_CLIENT_ID,
+    callback: handleGoogleCredential,
+    auto_select: false,
+  });
+}
+
+window.addEventListener('load', () => {
+  // Wait for GSI to load
+  const wait = setInterval(() => {
+    if (window.google) { clearInterval(wait); initGoogle(); }
+  }, 200);
+  setTimeout(() => clearInterval(wait), 5000);
+  renderAll();
+});
+
+function renderAll() {
+  renderHeader();
+  renderMain();
+}
+
+function renderHeader() {
+  const el = document.getElementById('header-right');
+  if (user) {
+    el.innerHTML = `
+      <button class="btn btn-primary" onclick="openAdd()">
+        <i class="ti ti-plus"></i> Add recipe
+      </button>
+      <div class="user-menu-wrap" id="umw">
+        <img src="${esc(user.picture)}" alt="${esc(user.name)}" class="user-avatar" onclick="toggleUserMenu()" />
+        <div class="user-menu" id="user-menu">
+          <div class="user-menu-header">
+            <div class="user-menu-name">${esc(user.name)}</div>
+            <div class="user-menu-email">${esc(user.email)}</div>
+          </div>
+          <button class="user-menu-item danger" onclick="signOut()">
+            <i class="ti ti-logout"></i> Sign out
+          </button>
+        </div>
+      </div>`;
+  } else {
+    el.innerHTML = `
+      <button class="btn btn-google" onclick="triggerGoogleLogin()">
+        <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+          <path fill="#4285F4" d="M44.5 20H24v8.5h11.8C34.7 33.9 29.8 37 24 37c-7.2 0-13-5.8-13-13s5.8-13 13-13c3.1 0 5.9 1.1 8.1 2.9l6.4-6.4C34.6 4.1 29.6 2 24 2 11.8 2 2 11.8 2 24s9.8 22 22 22c11 0 21-8 21-22 0-1.3-.2-2.7-.5-4z"/>
+          <path fill="#34A853" d="M6.3 14.7l7 5.1C15.1 17 19.3 14 24 14c3.1 0 5.9 1.1 8.1 2.9l6.4-6.4C34.6 4.1 29.6 2 24 2 16.3 2 9.7 6.4 6.3 14.7z"/>
+          <path fill="#FBBC05" d="M24 46c5.6 0 10.6-1.9 14.5-5.1l-6.7-5.5C29.8 37 27 38 24 38c-5.7 0-10.6-3.1-11.7-7.5l-7 5.4C8.8 42.1 15.9 46 24 46z"/>
+          <path fill="#EA4335" d="M44.5 20H24v8.5h11.8c-1 2.8-2.9 5-5.5 6.5l6.7 5.5C41.5 36.9 45 30.9 45 24c0-1.3-.2-2.7-.5-4z"/>
+        </svg>
+        Sign in with Google
+      </button>`;
+  }
+}
+
+function triggerGoogleLogin() {
+  if (GOOGLE_CLIENT_ID === 'YOUR_GOOGLE_CLIENT_ID_HERE') {
+    alert('To enable Google login:\n\n1. Open index.html in a text editor\n2. Replace YOUR_GOOGLE_CLIENT_ID_HERE with your Google OAuth Client ID\n\nSee the comment at the top of the file for setup steps.');
+    return;
+  }
+  if (!window.google) {
+    alert('Google Sign-In is loading. Try again in a moment.');
+    return;
+  }
+  google.accounts.id.prompt();
+}
+
+function toggleUserMenu() {
+  userMenuOpen = !userMenuOpen;
+  const m = document.getElementById('user-menu');
+  if (m) m.classList.toggle('open', userMenuOpen);
+}
+
+document.addEventListener('click', (e) => {
+  if (userMenuOpen && !document.getElementById('umw')?.contains(e.target)) {
+    userMenuOpen = false;
+    const m = document.getElementById('user-menu');
+    if (m) m.classList.remove('open');
+  }
+});
+
+function renderMain() {
+  const el = document.getElementById('main');
+  let list = recipes;
+
+  // If logged in: show your own + public recipes from others
+  // If not logged in: only show public recipes
+  if (user) {
+    list = recipes.filter(r => r.ownerId === user.id || r.isPublic);
+  } else {
+    list = recipes.filter(r => r.isPublic);
+  }
+
+  if (activeTag !== 'All') list = list.filter(r => r.category === activeTag);
+  if (searchQ) list = list.filter(r =>
+    r.title.toLowerCase().includes(searchQ) ||
+    (r.ingredients||'').toLowerCase().includes(searchQ)
+  );
+
+  const publicCount = list.filter(r => r.isPublic).length;
+  const myCount = user ? list.filter(r => r.ownerId === user.id).length : 0;
+
+  let loginBanner = '';
+  if (!user) {
+    loginBanner = `
+      <div class="login-banner">
+        <div style="font-size:40px;margin-bottom:1rem">🔐</div>
+        <h2>Save your personal recipes</h2>
+        <p>Sign in with Google to create your private recipe collection.<br>Your recipes are private by default — share only what you want.</p>
+        <button class="btn btn-google" onclick="triggerGoogleLogin()">
+          <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+            <path fill="#4285F4" d="M44.5 20H24v8.5h11.8C34.7 33.9 29.8 37 24 37c-7.2 0-13-5.8-13-13s5.8-13 13-13c3.1 0 5.9 1.1 8.1 2.9l6.4-6.4C34.6 4.1 29.6 2 24 2 11.8 2 2 11.8 2 24s9.8 22 22 22c11 0 21-8 21-22 0-1.3-.2-2.7-.5-4z"/>
+            <path fill="#34A853" d="M6.3 14.7l7 5.1C15.1 17 19.3 14 24 14c3.1 0 5.9 1.1 8.1 2.9l6.4-6.4C34.6 4.1 29.6 2 24 2 16.3 2 9.7 6.4 6.3 14.7z"/>
+            <path fill="#FBBC05" d="M24 46c5.6 0 10.6-1.9 14.5-5.1l-6.7-5.5C29.8 37 27 38 24 38c-5.7 0-10.6-3.1-11.7-7.5l-7 5.4C8.8 42.1 15.9 46 24 46z"/>
+            <path fill="#EA4335" d="M44.5 20H24v8.5h11.8c-1 2.8-2.9 5-5.5 6.5l6.7 5.5C41.5 36.9 45 30.9 45 24c0-1.3-.2-2.7-.5-4z"/>
+          </svg>
+          Sign in with Google
+        </button>
+      </div>`;
+  }
+
+  const tags = CATEGORIES.map(t =>
+    `<button class="tag${activeTag===t?' active':''}" onclick="setTag('${t}')">${t}</button>`
+  ).join('');
+
+  const cards = list.length ? list.map(r => {
+    const bg = CAT_BG[r.category] || CAT_BG[''];
+    const mine = user && r.ownerId === user.id;
+    return `<div class="recipe-card" onclick="openView('${r.id}')">
+      <div class="card-banner" style="background:${bg}">
+        ${r.emoji || '🍲'}
+        ${mine && !r.isPublic ? '<div class="card-lock"><i class="ti ti-lock" style="font-size:11px"></i></div>' : ''}
+      </div>
+      <div class="card-body">
+        <div class="card-title">${esc(r.title)}</div>
+        <div class="card-meta">
+          ${r.time ? `<span><i class="ti ti-clock" style="font-size:12px"></i> ${esc(r.time)}</span>` : ''}
+          ${r.servings ? `<span><i class="ti ti-users" style="font-size:12px"></i> ${esc(r.servings)}</span>` : ''}
+        </div>
+        ${r.category ? `<span class="card-cat">${esc(r.category)}</span>` : ''}
+      </div>
+    </div>`;
+  }).join('') : `
+    <div class="empty">
+      <div class="empty-icon">🍽️</div>
+      <h3>${recipes.length ? 'No matching recipes' : 'No public recipes yet'}</h3>
+      <p>${user ? 'Add your first recipe above.' : 'Sign in to add your own recipes.'}</p>
+      ${user ? `<button class="btn btn-primary" onclick="openAdd()"><i class="ti ti-plus"></i> Add recipe</button>` : ''}
+    </div>`;
+
+  el.innerHTML = `
+    ${loginBanner}
+    <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:1.25rem;gap:10px">
+      <div>
+        <h1 class="page-title">${user ? 'Your recipes' : 'Community recipes'}</h1>
+        <p class="page-sub">${user ? `${myCount} private · ${list.filter(r=>r.ownerId===user.id&&r.isPublic).length} public` : `${publicCount} shared recipes`}</p>
+      </div>
+    </div>
+    <div class="toolbar">
+      <div class="search-wrap">
+        <i class="ti ti-search"></i>
+        <input class="search-input" type="text" placeholder="Search recipes…" value="${esc(searchQ)}" oninput="onSearch(this.value)" />
+      </div>
+      ${user ? `<button class="btn btn-primary" onclick="openAdd()"><i class="ti ti-plus"></i> Add recipe</button>` : ''}
+    </div>
+    <div class="tags">${tags}</div>
+    <div class="recipes">${cards}</div>`;
+}
+
+function onSearch(v) { searchQ = v.toLowerCase(); renderMain(); }
+function setTag(t) { activeTag = t; renderMain(); }
+
+function openAdd(existing) {
+  if (!user) { triggerGoogleLogin(); return; }
+  const r = existing || {
+    id: uid(), emoji: '🍲', title: '', category: 'Dinner',
+    time: '', servings: '', ingredients: '', steps: '',
+    isPublic: false, ownerId: user.id
+  };
+  const isEdit = !!existing;
+
+  document.getElementById('modal-root').innerHTML = `
+    <div class="backdrop" onclick="closeModal(event)">
+      <div class="modal" onclick="event.stopPropagation()">
+        <div class="modal-header">
+          <h2>${isEdit ? 'Edit recipe' : 'New recipe'}</h2>
+          <button class="modal-close" onclick="closeModal()" aria-label="Close"><i class="ti ti-x"></i></button>
+        </div>
+        <div class="modal-body">
+          <div class="form-row">
+            <label class="form-label">Icon</label>
+            <div class="emoji-picker" id="ep">${EMOJIS.map(e=>`<button type="button" class="emoji-btn${r.emoji===e?' selected':''}" onclick="pickEmoji('${e}')">${e}</button>`).join('')}</div>
+            <input type="hidden" id="f-emoji" value="${esc(r.emoji||'🍲')}">
+          </div>
+          <div class="form-row">
+            <label class="form-label">Recipe name *</label>
+            <input class="form-input" id="f-title" type="text" placeholder="e.g. Creamy tomato pasta" value="${esc(r.title)}" />
+          </div>
+          <div class="form-row-2">
+            <div class="form-row" style="margin:0">
+              <label class="form-label">Category</label>
+              <select class="form-select" id="f-cat">${['Breakfast','Lunch','Dinner','Snack','Dessert','Vegetarian','Quick'].map(c=>`<option${r.category===c?' selected':''}>${c}</option>`).join('')}</select>
+            </div>
+            <div class="form-row" style="margin:0">
+              <label class="form-label">Cook time</label>
+              <input class="form-input" id="f-time" type="text" placeholder="e.g. 20 min" value="${esc(r.time)}" />
+            </div>
+          </div>
+          <div class="form-row" style="margin-top:1rem">
+            <label class="form-label">Servings</label>
+            <input class="form-input" id="f-servings" type="text" placeholder="e.g. 4 people" value="${esc(r.servings)}" />
+          </div>
+          <div class="form-row">
+            <label class="form-label">Ingredients</label>
+            <textarea class="form-textarea" id="f-ing" placeholder="One ingredient per line&#10;e.g. 2 cups flour">${esc(r.ingredients)}</textarea>
+          </div>
+          <div class="form-row">
+            <label class="form-label">Steps</label>
+            <textarea class="form-textarea" id="f-steps" placeholder="How to make it…" style="min-height:100px">${esc(r.steps)}</textarea>
+          </div>
+          <div class="form-row">
+            <label class="form-label">Visibility</label>
+            <div class="visibility-row">
+              <span class="visibility-label">
+                <i class="ti ti-${r.isPublic?'world':'lock'}" id="vis-icon"></i>
+                <span id="vis-label">${r.isPublic ? 'Public — anyone can see this' : 'Private — only visible to you'}</span>
+              </span>
+              <label class="toggle" aria-label="Make public">
+                <input type="checkbox" id="f-public" ${r.isPublic?'checked':''} onchange="updateVisLabel(this.checked)">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+          <button class="btn btn-primary" onclick="saveRecipeForm('${r.id}', ${isEdit})">Save recipe</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function updateVisLabel(isPublic) {
+  document.getElementById('vis-label').textContent = isPublic ? 'Public — anyone can see this' : 'Private — only visible to you';
+  document.getElementById('vis-icon').className = `ti ti-${isPublic ? 'world' : 'lock'}`;
+}
+
+function pickEmoji(e) {
+  document.getElementById('f-emoji').value = e;
+  document.querySelectorAll('.emoji-btn').forEach(b => b.classList.toggle('selected', b.textContent === e));
+}
+
+function saveRecipeForm(id, isEdit) {
+  const title = document.getElementById('f-title').value.trim();
+  if (!title) { document.getElementById('f-title').focus(); return; }
+  const existing = recipes.find(x => x.id === id);
+  const r = {
+    id,
+    emoji: document.getElementById('f-emoji').value,
+    title,
+    category: document.getElementById('f-cat').value,
+    time: document.getElementById('f-time').value.trim(),
+    servings: document.getElementById('f-servings').value.trim(),
+    ingredients: document.getElementById('f-ing').value.trim(),
+    steps: document.getElementById('f-steps').value.trim(),
+    isPublic: document.getElementById('f-public').checked,
+    ownerId: user.id,
+    createdAt: isEdit ? (existing||{}).createdAt : Date.now()
+  };
+  if (isEdit) recipes = recipes.map(x => x.id === id ? r : x);
+  else recipes.push(r);
+  saveRecipes();
+  closeModal();
+  renderMain();
+  notify(isEdit ? 'Recipe updated.' : 'Recipe saved!');
+}
+
+function openView(id) {
+  const r = recipes.find(x => x.id === id);
+  if (!r) return;
+  const bg = CAT_BG[r.category] || CAT_BG[''];
+  const mine = user && r.ownerId === user.id;
+
+  document.getElementById('modal-root').innerHTML = `
+    <div class="backdrop" onclick="closeModal(event)">
+      <div class="modal" onclick="event.stopPropagation()">
+        <div class="view-banner" style="background:${bg}">${r.emoji||'🍲'}</div>
+        <div class="modal-header">
+          <div style="flex:1">
+            <h2>${esc(r.title)}</h2>
+            <div class="view-meta">
+              ${r.category ? `<span class="badge"><i class="ti ti-tag" style="font-size:12px"></i> ${esc(r.category)}</span>` : ''}
+              ${r.time ? `<span class="badge"><i class="ti ti-clock" style="font-size:12px"></i> ${esc(r.time)}</span>` : ''}
+              ${r.servings ? `<span class="badge"><i class="ti ti-users" style="font-size:12px"></i> ${esc(r.servings)}</span>` : ''}
+              ${mine ? `<span class="badge ${r.isPublic?'public':'private'}"><i class="ti ti-${r.isPublic?'world':'lock'}" style="font-size:12px"></i> ${r.isPublic ? 'Public' : 'Private'}</span>` : ''}
+            </div>
+          </div>
+          <button class="modal-close" onclick="closeModal()" aria-label="Close"><i class="ti ti-x"></i></button>
+        </div>
+        <div class="modal-body">
+          ${r.ingredients ? `<div class="section-label">Ingredients</div><div class="section-text">${esc(r.ingredients)}</div>` : ''}
+          ${r.steps ? `<div class="section-label">How to make it</div><div class="section-text">${esc(r.steps)}</div>` : ''}
+        </div>
+        ${mine ? `
+        <div class="modal-footer">
+          <button class="btn-delete" onclick="deleteRecipe('${r.id}')"><i class="ti ti-trash"></i> Delete</button>
+          <button class="btn btn-outline" onclick="closeModal()">Close</button>
+          <button class="btn btn-primary" onclick="closeModal(); openAdd(${JSON.stringify(r).replace(/</g,'\\u003c').replace(/`/g,'\\u0060')})"><i class="ti ti-edit"></i> Edit</button>
+        </div>` : `
+        <div class="modal-footer">
+          <button class="btn btn-outline" onclick="closeModal()">Close</button>
+        </div>`}
+      </div>
+    </div>`;
+}
+
+function deleteRecipe(id) {
+  if (!confirm('Delete this recipe?')) return;
+  recipes = recipes.filter(x => x.id !== id);
+  saveRecipes();
+  closeModal();
+  renderMain();
+  notify('Recipe deleted.');
+}
+
+function closeModal(e) {
+  if (e && e.target !== e.currentTarget) return;
+  document.getElementById('modal-root').innerHTML = '';
+}
+</script>
+</body>
+</html>
